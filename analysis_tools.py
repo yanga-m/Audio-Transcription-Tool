@@ -55,8 +55,11 @@ def classify_topics_with_other(text):
     vectorizer = CountVectorizer(stop_words='english')
     X = vectorizer.fit_transform([text])
 
-    # Predefined topic labels
-    predefined_labels = ['Technology', 'Health', 'Education', 'Business', 'Environment']
+    # Extended predefined topic labels
+    predefined_labels = [
+        'Technology', 'Health', 'Education', 'Business', 'Environment',
+        'Sports', 'Politics', 'Entertainment', 'Science', 'Finance', 'Travel'
+    ]
 
     lda = LatentDirichletAllocation(n_components=len(predefined_labels), random_state=42)
     lda.fit(X)
@@ -88,9 +91,12 @@ def classify_topics_with_other(text):
             topic_counts['Other'] += 1
             classified_sentences.append((sentence.strip(), 'Other'))
 
-    # Calculate percentages
+    # Calculate percentages and remove topics with zero counts
     total_sentences = sum(topic_counts.values())
-    percentages = {key: (value / total_sentences) * 100 for key, value in topic_counts.items()}
+    percentages = {key: (value / total_sentences) * 100 for key, value in topic_counts.items() if value > 0}
+
+    # Filter out topics that are not present
+    topics = {k: v for k, v in topics.items() if topic_counts[k] > 0}
 
     return topics, percentages, classified_sentences
 
@@ -105,19 +111,41 @@ def visualize_topic_distribution(percentages, filename="topic_classification.png
     labels = list(percentages.keys())
     sizes = list(percentages.values())
 
-    # Create Pie Chart
+    # Updated color palette for more vibrant and distinct colors
+    color_palette = [
+        'skyblue', 'lightgreen', 'coral', 'gold', 'violet', 'mediumseagreen',
+        'lightcoral', 'slateblue', 'lightpink', 'mediumslateblue', 'mediumturquoise'
+    ]
+    colors = color_palette[:len(labels)]  # Match colors to the number of labels
+
     plt.figure(figsize=(8, 8))
-    plt.pie(
-        sizes, labels=labels, autopct='%1.1f%%', startangle=140,
-        colors=['lightblue', 'lightgreen', 'lightcoral', 'lightskyblue', 'lightpink', 'gray']
+    wedges, texts, autotexts = plt.pie(
+        sizes,
+        labels=labels,
+        autopct='%1.1f%%',
+        startangle=140,
+        colors=colors,
+        textprops=dict(color="black"),
     )
-    plt.title('Topic Classification')
+
+    # Improve text size and layout
+    for text in texts:
+        text.set_fontsize(10)  # Smaller font size for labels
+    for autotext in autotexts:
+        autotext.set_fontsize(10)  # Smaller font size for percentages
+
+    plt.title('Topic Classification', fontsize=14, pad=20)  # Add padding to the title
     plt.axis('equal')  # Ensure the pie is a circle
 
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+
     # Save the image
-    plt.savefig(filename)
+    plt.savefig(filename, bbox_inches="tight")
     print(f"Topic classification pie chart saved as {filename}.")
     plt.show()
+
+
 
 
 
