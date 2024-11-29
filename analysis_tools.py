@@ -2,10 +2,23 @@ from transformers import pipeline
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
+import re
 
 # Initialize the sentiment analysis pipeline
 sentiment_analyzer = pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
 
+def clean_text(text):
+    """
+    Clean and preprocess the input text for analysis.
+
+    :param text: Raw text input.
+    :return: Cleaned text.
+    """
+    # Remove special characters, numbers, and extra whitespace
+    text = re.sub(r'[^a-zA-Z\s]', '', text)  # Keep only letters and spaces
+    text = re.sub(r'\s+', ' ', text).strip()  # Remove extra spaces
+    text = text.lower()  # Convert to lowercase
+    return text
 
 def analyze_sentiment(text):
     """
@@ -14,14 +27,14 @@ def analyze_sentiment(text):
     :param text: The transcription text to analyze.
     :return: List of sentiment results.
     """
-    sentences = text.split('.')
+    cleaned_text = text  # Clean the text before analysis
+    sentences = cleaned_text.split('.')
     results = []
     for sentence in sentences:
         if sentence.strip():
             result = sentiment_analyzer(sentence.strip())
             results.append(result[0])  # Append first result
     return results
-
 
 def visualize_sentiment(sentiment_results, filename="sentiment_analysis.png"):
     """
@@ -44,7 +57,6 @@ def visualize_sentiment(sentiment_results, filename="sentiment_analysis.png"):
     print(f"Sentiment analysis bar chart saved as {filename}.")
     plt.show()
 
-
 def classify_topics_with_other(text):
     """
     Classify topics in the text and include an 'Other' category.
@@ -52,8 +64,9 @@ def classify_topics_with_other(text):
     :param text: The transcription text to classify.
     :return: Tuple containing topics, percentages, and sentences per topic.
     """
+    cleaned_text = text  # Clean the text before analysis
     vectorizer = CountVectorizer(stop_words='english')
-    X = vectorizer.fit_transform([text])
+    X = vectorizer.fit_transform([cleaned_text])
 
     # Extended predefined topic labels
     predefined_labels = [
@@ -73,7 +86,7 @@ def classify_topics_with_other(text):
         topics[predefined_labels[topic_idx]] = top_words
 
     # Classify sentences
-    sentences = text.split('.')
+    sentences = cleaned_text.split('.')
     topic_counts = {label: 0 for label in predefined_labels + ['Other']}
     classified_sentences = []
 
@@ -99,7 +112,6 @@ def classify_topics_with_other(text):
     topics = {k: v for k, v in topics.items() if topic_counts[k] > 0}
 
     return topics, percentages, classified_sentences
-
 
 def visualize_topic_distribution(percentages, filename="topic_classification.png"):
     """
@@ -144,6 +156,9 @@ def visualize_topic_distribution(percentages, filename="topic_classification.png
     plt.savefig(filename, bbox_inches="tight")
     print(f"Topic classification pie chart saved as {filename}.")
     plt.show()
+
+
+
 
 
 
